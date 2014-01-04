@@ -11,5 +11,4 @@ Usage
 props = Xbox360ISO().parse("Portal 2.iso")
 if props:
 	print("Game: %s [%s]" % (props["game_name"], props["media_id"]))
-
 	
