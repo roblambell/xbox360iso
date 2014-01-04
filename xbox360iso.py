@@ -5,10 +5,10 @@
 # This code is licensed under MIT license (see LICENSE for details)
 #
 
-import os
 import binascii
 import csv
 import io
+import os.path
 from struct import *
 import sys
 import urllib.request
@@ -16,7 +16,7 @@ import urllib.request
 
 class Xbox360ISO(object):
     """
-    Parse a Xbox 360 ISO image and Xex file.
+    Parse an Xbox 360 ISO image and Xex file.
     Related source code:
     * abgx360.c of abgx360
     * http://abgx360.net
@@ -47,13 +47,15 @@ class Xbox360ISO(object):
             return False
 
         # find and extract default.xex
-        xex = self.search_defaultxex(iso_file, iso_info)
-        if xex is False:
+        xex_buffer = self.search_defaultxex(iso_file, iso_info)
+        if xex_buffer is False:
             iso_file.close()
             return False
+        else:
+            iso_info['defaultxex'] = xex_buffer
 
         # extract game details
-        xex_info = self.extract_xex_info(xex)
+        xex_info = self.extract_xex_info(xex_buffer)
         if xex_info is False:
             iso_file.close()
             return False
@@ -129,7 +131,7 @@ class Xbox360ISO(object):
 
     @staticmethod
     def extract_xex_info(xex_buffer):
-        xex_headers = {}
+        xex_info = {}
 
         xex_buffer.seek(0)
         if xex_buffer.read(4).decode("ascii", "ignore") == 'XEX2':
@@ -173,18 +175,18 @@ class Xbox360ISO(object):
             # seek to each address and extract info
             if execution_info_address is not False:
                 xex_buffer.seek(execution_info_address)
-                xex_headers['media_id'] = binascii.hexlify(xex_buffer.read(4)).decode("ascii", "ignore").upper()
-                xex_headers['version'] = unpack('>I', xex_buffer.read(4))[0]
-                xex_headers['base_version'] = unpack('>I', xex_buffer.read(4))[0]
-                xex_headers['title_id'] = binascii.hexlify(xex_buffer.read(4)).decode("ascii", "ignore").upper()
-                xex_headers['platform'] = ord(xex_buffer.read(1))
-                xex_headers['executable_type'] = ord(xex_buffer.read(1))
-                xex_headers['disc_number'] = ord(xex_buffer.read(1))
-                xex_headers['disc_count'] = ord(xex_buffer.read(1))
+                xex_info['media_id'] = binascii.hexlify(xex_buffer.read(4)).decode("ascii", "ignore").upper()
+                xex_info['version'] = unpack('>I', xex_buffer.read(4))[0]
+                xex_info['base_version'] = unpack('>I', xex_buffer.read(4))[0]
+                xex_info['title_id'] = binascii.hexlify(xex_buffer.read(4)).decode("ascii", "ignore").upper()
+                xex_info['platform'] = ord(xex_buffer.read(1))
+                xex_info['executable_type'] = ord(xex_buffer.read(1))
+                xex_info['disc_number'] = ord(xex_buffer.read(1))
+                xex_info['disc_count'] = ord(xex_buffer.read(1))
             else:
                 return False
 
-            return xex_headers
+            return xex_info
         else:
             print('XEX2 was not found at the start of default.xex')
             return False
