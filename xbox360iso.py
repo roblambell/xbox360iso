@@ -9,7 +9,7 @@ import binascii
 import csv
 import io
 import os.path
-from struct import *
+from struct import unpack
 import sys
 import urllib.request
 
@@ -40,27 +40,27 @@ class Xbox360ISO(object):
         # open iso
         iso_file = open(filename, "rb")
 
-        # read iso
-        iso_info = self.read_iso(iso_file)
+        # check iso is an xbox 30 game and record some details
+        iso_info = self.check_iso(iso_file)
         if iso_info is False:
             iso_file.close()
             return False
 
-        # find and extract default.xex
-        xex_buffer = self.search_defaultxex(iso_file, iso_info)
+        # find and extract default.xex from the iso
+        xex_buffer = self.extract_defaultxex(iso_file, iso_info)
         if xex_buffer is False:
             iso_file.close()
             return False
         else:
             iso_info['defaultxex'] = xex_buffer
 
-        # extract game details
+        # extract game details from default.xex
         xex_info = self.extract_xex_info(xex_buffer)
         if xex_info is False:
             iso_file.close()
             return False
 
-        # lookup game name
+        # lookup the full game name
         xex_info['game_name'] = self.media_id_to_game_name(xex_info['media_id'])
 
         props = iso_info.copy()
@@ -69,7 +69,7 @@ class Xbox360ISO(object):
         iso_file.close()
         return props
 
-    def read_iso(self, iso_file):
+    def check_iso(self, iso_file):
         iso_info = {}
 
         iso_info['sector_size'] = 0x800
@@ -99,7 +99,7 @@ class Xbox360ISO(object):
         return iso_info
 
     @staticmethod
-    def search_defaultxex(iso_file, iso_info):
+    def extract_defaultxex(iso_file, iso_info):
         # seek to root sector
         iso_file.seek((iso_info['root_dir_sector'] * iso_info['sector_size']) + iso_info['root_offset'])
 
@@ -141,7 +141,7 @@ class Xbox360ISO(object):
             code_offset = unpack('>I', xex_buffer.read(4))[0]
             # check if the code_offset is too large
             if code_offset > sys.getsizeof(xex_buffer):
-                print('Starting address of Xex code is beyond size of default.xex!')
+                print('Starting address of Xex code is beyond size of default.xex')
                 return False
 
             # get the starting address of the xex certificate
@@ -149,7 +149,7 @@ class Xbox360ISO(object):
             cert_offset = unpack('>I', xex_buffer.read(4))[0]
             # check if the cert_offset is too large
             if cert_offset > code_offset:
-                print('Xex certificate offset is beyond the starting address of Xex code!')
+                print('Xex certificate offset is beyond the starting address of Xex code')
                 return False
 
             # get the number of entries in the general info table
@@ -157,7 +157,7 @@ class Xbox360ISO(object):
             info_table_num_entries = unpack('>I', xex_buffer.read(4))[0]
             # check that there aren't too many entries
             if info_table_num_entries * 8 + 24 > code_offset:
-                print('Xex general info table has entries that spill over into the Xex code!!')
+                print('Xex general info table has entries that spill over into the Xex code')
                 return False
 
             execution_info_address = False
