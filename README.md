@@ -3,6 +3,10 @@ Xbox360ISO
 
 Xbox 360 ISO / Xex Analysis &amp; Extraction
 
+Requirements
+------------
+ * Python 3.x
+
 Usage
 ------------
 
