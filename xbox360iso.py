@@ -40,7 +40,7 @@ class Xbox360ISO(object):
         # open iso
         iso_file = open(filename, "rb")
 
-        # check iso is an xbox 30 game and record some details
+        # check iso is an xbox 360 game and record some details
         iso_info = self.check_iso(iso_file)
         if iso_info is False:
             iso_file.close()
